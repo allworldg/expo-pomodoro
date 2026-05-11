@@ -1,0 +1,9 @@
+{
+  "platforms": ["apple", "android", "web"],
+  "apple": {
+    "modules": ["CountdownModule"]
+  },
+  "android": {
+    "modules": ["expo.modules.countdown.CountdownModule"]
+  }
+}
