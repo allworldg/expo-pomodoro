@@ -31,6 +31,7 @@ class CountdownModule : Module() {
             appContext.reactContext.let {
                 Toast.makeText(it, "hello toast", Toast.LENGTH_SHORT).show()
             }
+
         }
 
         // Defines a JavaScript function that always returns a Promise and whose native code
