@@ -6,7 +6,7 @@ import Svg, { Path } from "react-native-svg";
 export default function Index() {
   const [minute, setMinute] = useState(0);
   const [second, setSecond] = useState(0);
-  const [isStarted, setIsStarted] = useState(true);
+  const [isStarted, setIsStarted] = useState(false);
   const [pomodoro, setPomodoro] = useState<string>("1");
   const [rest, setRest] = useState<string>("0");
   const [totalLoops, setTotalLoops] = useState<string>("0");
@@ -22,6 +22,12 @@ export default function Index() {
         <Text className="text-7xl">
           {minute_format}:{second_format}
         </Text>
+      </View>
+      <View className={`items-center mb-6 ${!isStarted? "hidden" : ""}`}>
+        <View>
+          <Text>正在专注（状态）</Text>
+          <Text>当前第x轮/共x轮</Text>
+        </View>
       </View>
       <View className="items-center max-h-16 mb-5">
         {!isStarted ?
@@ -98,11 +104,10 @@ export default function Index() {
         </View>
       </View>
       <View className="mt-auto">
-      <Text>当日专注次数: x</Text>
-      <Text>时长：xx分钟</Text>
-      <Text>总时长：x小时x分钟</Text>
+        <Text>当日专注次数: x</Text>
+        <Text>时长：xx分钟</Text>
+        <Text>总时长：x小时x分钟</Text>
       </View>
-
     </View>
   );
 }
