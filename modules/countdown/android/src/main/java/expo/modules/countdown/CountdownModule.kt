@@ -1,7 +1,9 @@
 package expo.modules.countdown
 
+import android.content.Intent
 import android.os.Handler
 import android.os.Looper
+import androidx.core.content.ContextCompat
 import expo.modules.countdown.contants.Constants
 import expo.modules.countdown.contants.EventTypeEnum
 import expo.modules.countdown.contants.StateEnum
@@ -142,6 +144,11 @@ class CountdownModule : Module() {
 
         AsyncFunction("startCountdown") { stateData: CountDownData ->
             init(stateData)
+
+            appContext.reactContext?.let {
+                val intent = Intent(it, CountdownService::class.java)
+                ContextCompat.startForegroundService(it, intent)
+            }
             start()
         }
 
