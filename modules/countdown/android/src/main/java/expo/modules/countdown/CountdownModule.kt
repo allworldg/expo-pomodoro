@@ -18,7 +18,7 @@ class CountdownModule : Module() {
     private val runnable = object : Runnable {
         override fun run() {
             countdown()
-            if (countDownData.curState != StateEnum.STOP) {
+            if (countDownData.state != StateEnum.STOP) {
                 handler.postDelayed(this, internalTime)
             }
         }
@@ -31,22 +31,22 @@ class CountdownModule : Module() {
             internalTime = Constants.TimeEnum.NORMAL.value
             return
         }
-        onStateFinished()
+        onStateChanged()
         internalTime = Constants.TimeEnum.QUICK.value
     }
 
-    private fun onStateFinished() {
-        when (countDownData.curState) {
+    private fun onStateChanged() {
+        when (countDownData.state) {
             StateEnum.FOCUSING -> {
                 if (hasRest()) {
-                    countDownData.curState = StateEnum.RESTING
+                    countDownData.state = StateEnum.RESTING
                     countDownData.targetTime =
                         countDownData.rest * Constants.MINUTE
                     countDownData.targetTime += System.currentTimeMillis()
                 } else {
-                    countDownData.curCycle++
                     if (hasNextCycle()) {
-                        countDownData.curState = StateEnum.FOCUSING
+                        countDownData.curCycle++
+                        countDownData.state = StateEnum.FOCUSING
                         countDownData.targetTime =
                             countDownData.pomodoro * Constants.MINUTE
                         countDownData.targetTime += System.currentTimeMillis()
@@ -54,18 +54,20 @@ class CountdownModule : Module() {
                         finish()
                     }
                 }
+                sendStateChangeEvent()
             }
 
             StateEnum.RESTING -> {
-                countDownData.curCycle++
                 if (hasNextCycle()) {
-                    countDownData.curState = StateEnum.FOCUSING
+                    countDownData.curCycle++
+                    countDownData.state = StateEnum.FOCUSING
                     countDownData.targetTime =
                         countDownData.pomodoro * Constants.MINUTE
                     countDownData.targetTime += System.currentTimeMillis()
                 } else {
                     finish()
                 }
+                sendStateChangeEvent()
             }
 
             else -> {
@@ -76,8 +78,7 @@ class CountdownModule : Module() {
 
     private fun finish() {
         handler.removeCallbacks(runnable)
-        countDownData.curState = StateEnum.STOP
-        sendEvent(EventTypeEnum.STOP.value)
+        countDownData.state = StateEnum.STOP
     }
 
     private fun hasRest(): Boolean {
@@ -88,9 +89,21 @@ class CountdownModule : Module() {
         return countDownData.curCycle < countDownData.cycles
     }
 
+    private fun sendStateChangeEvent() {
+        sendEvent(
+            EventTypeEnum.STATECHANGE.value,
+            mapOf(
+                "state" to countDownData.state.value,
+                "curCycle" to countDownData.curCycle,
+                "cycles" to countDownData.cycles
+            )
+        )
+    }
+
 
     private fun start() {
         handler.removeCallbacks(runnable)
+        sendStateChangeEvent()
         handler.postDelayed(runnable, 10L)
     }
 
@@ -107,8 +120,8 @@ class CountdownModule : Module() {
             this.pomodoro = stateData.pomodoro
             this.cycles = stateData.cycles
             this.rest = stateData.rest
-            this.curState = StateEnum.FOCUSING
-            this.curCycle = 0
+            this.state = StateEnum.FOCUSING
+            this.curCycle = 1
             countDownData.targetTime =
                 this.pomodoro.toLong() * Constants.MINUTE + System.currentTimeMillis()
         }

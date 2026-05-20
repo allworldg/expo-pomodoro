@@ -4,7 +4,7 @@ import expo.modules.countdown.contants.StateEnum
 import expo.modules.kotlin.records.Field
 import expo.modules.kotlin.records.Record
 
-class CountDownData : Record {
+class CountDownData : Record{
     @Field
     var pomodoro: Int = 0;
 
@@ -13,8 +13,14 @@ class CountDownData : Record {
 
     @Field
     var cycles: Int = 1;
+
+    @Field
     var targetTime: Long = 0L;
-    var curState: StateEnum = StateEnum.STOP;
+
+    @Field
+    var state: StateEnum = StateEnum.STOP;
+
+    @Field
     var curCycle:Int = 1;
 
 
@@ -23,8 +29,9 @@ class CountDownData : Record {
                 "CountDownState(" +
                 "pomodoro=$pomodoro, " +
                 "rest=$rest, " +
-                "totalLoop=$cycles, " +
+                "cycles=$cycles, " +
+                "curcycle = $curCycle"+
                 "targetTime=$targetTime, " +
-                "curState=$curState)"
+                "curState=$state)"
     }
 }

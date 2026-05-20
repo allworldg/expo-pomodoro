@@ -11,14 +11,21 @@ export type CountdownData = {
   cycles:number;
 }
 
+export enum StateEnum {
+    FOCUSING = "focusing",
+    RESTING = "resting",
+    STOP = "stop"
+}
+export type StateChangeData = {
+  state: StateEnum;
+  curCycle:number;
+  cycles:number;
+}
+
 export type CountdownModuleEvents = {
   onChange: (params: ChangeEventPayload) => void;
   [EventType.TICK]: (data:{remainTime:number}) => void;
-  [EventType.STOP]: () => void;
-  [EventType.STATECHANGE]:()=>void;
-  CountdownConstant: () => void;
-  stateChange: () => void;
-  stop: () => void;
+  [EventType.STATECHANGE]:(data:StateChangeData)=>void;
 };
 
 

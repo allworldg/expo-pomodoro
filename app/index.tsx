@@ -1,46 +1,58 @@
+import ClockDisplay from "@/components/ClockDisplay";
+import PomodoroStatus from "@/components/PomodoroStatus";
 import "@/global.css";
-import {
-  EventType,
-  MINUTE,
-  SECOND,
-} from "@/modules/countdown/src/CountdownConstant";
+import { StateChangeData, StateEnum } from "@/modules/countdown";
+import { EventType } from "@/modules/countdown/src/CountdownConstant";
 import CountdownModule from "@/modules/countdown/src/CountdownModule";
 import { useEffect, useRef, useState } from "react";
 import { Text, TextInput, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 
 export default function Index() {
-  const [minute, setMinute] = useState(0);
-  const [second, setSecond] = useState(0);
   const [isStarted, setIsStarted] = useState(false);
   const [pomodoro, setPomodoro] = useState<string>("1");
   const [rest, setRest] = useState<string>("0");
   const [cycles, setCycles] = useState<string>("1");
-  const minute_format = minute.toString().padStart(2, "0");
-  const second_format = second.toString().padStart(2, "0");
+  const [state, setState] = useState<string>("");
+  const [remainTime, setRemainTime] = useState<number>(0);
   const subTick = useRef<any>(null);
-  const subFinish = useRef<any>(null); //todo: try to update type
-
+  const subStateChange = useRef<any>(null); //todo: try to update type
+  const [curCycle, setCurCycle] = useState<number>(1);
+  const [stateCycles, setStateCycles] = useState<number>(0);
   useEffect(() => {
     subTick.current = CountdownModule.addListener(
       EventType.TICK,
       (data: { remainTime: number }) => {
         const { remainTime } = data;
-        setMinute(Math.floor(remainTime / MINUTE));
-        setSecond(Math.floor((remainTime % MINUTE) / SECOND));
+        setRemainTime(remainTime);
       }
     );
-    subFinish.current = CountdownModule.addListener(EventType.STOP, () => {
-      setIsStarted(false);
-    });
+    subStateChange.current = CountdownModule.addListener(
+      EventType.STATECHANGE,
+      (data: StateChangeData) => {
+        const {
+          state: data_state,
+          curCycle: data_curCycle,
+          cycles: data_cycles,
+        } = data;
+        setState(data_state);
+        setCurCycle(data_curCycle);
+        setStateCycles(data_cycles)
+        if(data_state==StateEnum.STOP){
+          setIsStarted(false);
+        }else{
+          setIsStarted(true);
+        }
+      }
+    );
+
     return () => {
-      subFinish.current.remove();
+      subStateChange.current.remove();
       subTick.current.remove();
     };
   }, []);
 
   function start() {
-    setIsStarted(true);
     CountdownModule.startCountdown({
       pomodoro: Number(pomodoro),
       rest: Number(rest),
@@ -50,21 +62,14 @@ export default function Index() {
   function stop() {
     CountdownModule.stopCountdown();
     setIsStarted(false);
-    setSecond(0);
-    setMinute(0);
   }
   return (
     <View className="flex-1">
       <View className="items-center py-10">
-        <Text className="text-7xl">
-          {minute_format}:{second_format}
-        </Text>
+        <ClockDisplay remainTime={remainTime}></ClockDisplay>
       </View>
       <View className={`items-center mb-6 ${!isStarted ? "hidden" : ""}`}>
-        <View>
-          <Text>正在专注（状态）</Text>
-          <Text>当前第x轮/共x轮</Text>
-        </View>
+        <PomodoroStatus state={state} curCycle={curCycle} cycles={stateCycles}></PomodoroStatus>
       </View>
       <View className="items-center max-h-16 mb-5">
         {!isStarted ?
