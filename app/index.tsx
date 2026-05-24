@@ -37,10 +37,10 @@ export default function Index() {
         } = data;
         setState(data_state);
         setCurCycle(data_curCycle);
-        setStateCycles(data_cycles)
-        if(data_state==StateEnum.STOP){
+        setStateCycles(data_cycles);
+        if (data_state == StateEnum.STOP) {
           setIsStarted(false);
-        }else{
+        } else {
           setIsStarted(true);
         }
       }
@@ -61,6 +61,7 @@ export default function Index() {
   }
   function stop() {
     CountdownModule.stopCountdown();
+    setRemainTime(0);
     setIsStarted(false);
   }
   return (
@@ -69,7 +70,11 @@ export default function Index() {
         <ClockDisplay remainTime={remainTime}></ClockDisplay>
       </View>
       <View className={`items-center mb-6 ${!isStarted ? "hidden" : ""}`}>
-        <PomodoroStatus state={state} curCycle={curCycle} cycles={stateCycles}></PomodoroStatus>
+        <PomodoroStatus
+          state={state}
+          curCycle={curCycle}
+          cycles={stateCycles}
+        ></PomodoroStatus>
       </View>
       <View className="items-center max-h-16 mb-5">
         {!isStarted ?

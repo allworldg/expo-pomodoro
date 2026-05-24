@@ -3,9 +3,10 @@ package expo.modules.countdown
 import expo.modules.countdown.contants.Constants
 
 object Utils {
-    fun convertTimeToStr(time: Long): String {
-        val minute = time / Constants.MINUTE;
-        val second = (time % Constants.MINUTE) / Constants.SECOND;
+    fun getClockTimeStr(time: Long): String {
+        val minute: String = (time.floorDiv(Constants.MINUTE)).toString().padStart(2, '0')
+        val second =
+            ((time % Constants.MINUTE).floorDiv(Constants.SECOND)).toString().padStart(2, '0')
         return "$minute:$second"
     }
 }

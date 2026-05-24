@@ -8,19 +8,16 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import android.os.Handler
-import android.os.HandlerThread
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import expo.modules.countdown.contants.Constants
 import expo.modules.countdown.contants.Constants.CHANNEL_ID
 import expo.modules.countdown.contants.StateEnum
-import kotlinx.coroutines.Runnable
 
 
 class CountdownService : Service() {
-    private val id = 1
-    private var isForeground = false;
+    private val foreGroundId = 1
+    private val normalId = 2;
     private val pendingIntent: PendingIntent by lazy {
         PendingIntent.getActivity(
             this,
@@ -30,25 +27,42 @@ class CountdownService : Service() {
         )
     }
 
-    private fun buildNotification(state: StateEnum, countdownTime: Long): Notification {
+    private fun createNotificationBuilder(
+        state: StateEnum,
+        countdownTime: Long
+    ): NotificationCompat.Builder {
         val stateText: String = when (state.value) {
             StateEnum.FOCUSING.value -> Constants.FOCUSING_STR
             StateEnum.RESTING.value -> Constants.RESTING_STR
+            StateEnum.STOP.value -> Constants.FINISH_STR
             else -> {
-                "error state in notification"
+                "wrong state : ${state.name}"
             }
         }
-        println("state is ${state.value} + countTime is ${countdownTime}")
+        val contentText: String = if (state.value == StateEnum.STOP.value) {
+            ""
+        } else {
+            Utils.getClockTimeStr(countdownTime)
+        }
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_media_play)
             .setContentTitle(stateText)
-            .setContentText(Utils.convertTimeToStr(countdownTime))
-            .setContentIntent(pendingIntent).build()
+            .setContentText(contentText)
+            .setContentIntent(pendingIntent)
     }
 
-    private fun updateNotification(state: StateEnum, countdownTime: Long) {
-        val notification = buildNotification(state, countdownTime);
+    private fun createNotification(
+        state: StateEnum,
+        countdownTime: Long,
+        id: Int,
+        isKeeped: Boolean
+    ) {
+        val notificationBuilder = createNotificationBuilder(state, countdownTime);
+        if (!isKeeped) {
+            notificationBuilder.setAutoCancel(true);
+        }
+        var notification = notificationBuilder.build()
         val notificationManager =
             getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager;
         notificationManager.notify(id, notification);
@@ -56,16 +70,33 @@ class CountdownService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            Constants.ACTIONENUM.ACTION_START.name -> {
-                if (!isForeground) {
-                    val notification =
-                        buildNotification(NotificationData.state, NotificationData.coundownTime);
-                    startForeground(1, notification);
-                }
+            Constants.ACTIONENUM.START.name -> {
+                val notification =
+                    createNotificationBuilder(
+                        NotificationData.state,
+                        NotificationData.coundownTime
+                    ).build();
+                startForeground(1, notification);
             }
 
-            Constants.ACTIONENUM.ACTION_UPDATE.name -> {
-                updateNotification(NotificationData.state, NotificationData.coundownTime);
+            Constants.ACTIONENUM.UPDATE.name -> {
+                createNotification(
+                    NotificationData.state,
+                    NotificationData.coundownTime,
+                    foreGroundId,
+                    true
+                );
+            }
+
+            Constants.ACTIONENUM.STOP.name -> {
+                stopForeground(STOP_FOREGROUND_REMOVE)
+                createNotification(
+                    NotificationData.state,
+                    NotificationData.coundownTime,
+                    normalId,
+                    false,
+                )
+                stopSelf();
             }
         }
         return START_STICKY
@@ -89,6 +120,5 @@ class CountdownService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-        stopForeground(STOP_FOREGROUND_REMOVE)
     }
 }

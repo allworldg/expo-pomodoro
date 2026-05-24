@@ -11,11 +11,12 @@ object Constants {
       NORMAL(500L)
    }
    enum class ACTIONENUM(){
-      ACTION_START,
-      ACTION_UPDATE
+      START,
+      UPDATE,
+      STOP
 
    }
    const val FOCUSING_STR = "正在专注"
    const val RESTING_STR = "正在休息"
-
+   const val FINISH_STR = "已全部完成！"
 }

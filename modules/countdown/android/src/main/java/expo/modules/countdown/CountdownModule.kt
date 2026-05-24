@@ -1,5 +1,6 @@
 package expo.modules.countdown
 
+import android.app.Notification
 import android.content.Intent
 import android.os.Handler
 import android.os.Looper
@@ -35,7 +36,7 @@ class CountdownModule : Module() {
                 updateNotification(countDownData.state, remainTime)
                 appContext.reactContext?.let {
                     val intent = Intent(it, CountdownService::class.java).apply {
-                        action = Constants.ACTIONENUM.ACTION_UPDATE.name;
+                        action = Constants.ACTIONENUM.UPDATE.name;
                     }
                     ContextCompat.startForegroundService(it, intent)
                 }
@@ -92,6 +93,15 @@ class CountdownModule : Module() {
     private fun finish() {
         handler.removeCallbacks(runnable)
         countDownData.state = StateEnum.STOP
+        NotificationData.coundownTime =-1L;
+        NotificationData.state = StateEnum.STOP;
+        appContext.reactContext?.let {
+            val intent = Intent(it, CountdownService::class.java).apply {
+                action = Constants.ACTIONENUM.STOP.name;
+            }
+            it.startService(intent)
+        }
+
     }
 
     private fun hasRest(): Boolean {
@@ -123,9 +133,9 @@ class CountdownModule : Module() {
         preSeond = -1L;
         appContext.reactContext?.let {
             NotificationData.state = countDownData.state
-            NotificationData.coundownTime = countDownData.targetTime;
+            NotificationData.coundownTime = countDownData.targetTime - System.currentTimeMillis();
             val intent = Intent(it, CountdownService::class.java).apply {
-                action = Constants.ACTIONENUM.ACTION_START.name;
+                action = Constants.ACTIONENUM.START.name;
             }
             ContextCompat.startForegroundService(it, intent)
         }
@@ -140,6 +150,10 @@ class CountdownModule : Module() {
 
     private fun stop() {
         handler.removeCallbacks(runnable)
+        appContext.reactContext?.let {
+            val intent = Intent(it, CountdownService::class.java)
+            it.stopService(intent)
+        }
     }
 
     private fun init(stateData: CountDownData) {
