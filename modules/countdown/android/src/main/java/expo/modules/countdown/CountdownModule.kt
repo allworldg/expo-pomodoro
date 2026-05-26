@@ -1,9 +1,12 @@
 package expo.modules.countdown
 
-import android.app.Notification
+import android.Manifest
+import android.app.Activity
 import android.content.Intent
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import expo.modules.countdown.contants.Constants
 import expo.modules.countdown.contants.EventTypeEnum
@@ -93,7 +96,7 @@ class CountdownModule : Module() {
     private fun finish() {
         handler.removeCallbacks(runnable)
         countDownData.state = StateEnum.STOP
-        NotificationData.coundownTime =-1L;
+        NotificationData.countdownTime = -1L;
         NotificationData.state = StateEnum.STOP;
         appContext.reactContext?.let {
             val intent = Intent(it, CountdownService::class.java).apply {
@@ -125,7 +128,7 @@ class CountdownModule : Module() {
 
     private fun updateNotification(state: StateEnum, time: Long) {
         NotificationData.state = state
-        NotificationData.coundownTime = time;
+        NotificationData.countdownTime = time;
     }
 
 
@@ -133,7 +136,7 @@ class CountdownModule : Module() {
         preSeond = -1L;
         appContext.reactContext?.let {
             NotificationData.state = countDownData.state
-            NotificationData.coundownTime = countDownData.targetTime - System.currentTimeMillis();
+            NotificationData.countdownTime = countDownData.targetTime - System.currentTimeMillis();
             val intent = Intent(it, CountdownService::class.java).apply {
                 action = Constants.ACTIONENUM.START.name;
             }
@@ -168,6 +171,19 @@ class CountdownModule : Module() {
         }
     }
 
+    private fun requestNotificationPermission(){
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            return
+        }
+        appContext.currentActivity?.let {
+            ActivityCompat.requestPermissions(
+                it,
+                arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                1001
+            )
+        }
+    }
+
 
     // Each module class must implement the definition function. The definition consists of components
     // that describes the module's functionality and behavior.
@@ -195,9 +211,12 @@ class CountdownModule : Module() {
         Function(name = "stopCountdown") {
             stop()
         }
+        Function("requestNotificationPermission") {
+        }
 
         AsyncFunction("startCountdown") { stateData: CountDownData ->
             init(stateData)
+            requestNotificationPermission()
             start()
         }
 
@@ -227,4 +246,5 @@ class CountdownModule : Module() {
             Events("onLoad")
         }
     }
+
 }
