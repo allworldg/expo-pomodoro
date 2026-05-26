@@ -1,6 +1,8 @@
 package expo.modules.countdown
 
 import android.app.Notification
+import android.app.Notification.CATEGORY_STOPWATCH
+import android.app.Notification.VISIBILITY_PUBLIC
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -9,16 +11,18 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
+import android.provider.MediaStore.Video.VideoColumns.CATEGORY
 import androidx.core.app.NotificationCompat
 import expo.modules.countdown.contants.Constants
 import expo.modules.countdown.contants.Constants.CHANNEL_ID
 import expo.modules.countdown.contants.StateEnum
+import java.util.Locale
 
 
 class CountdownService : Service() {
     private val foreGroundId = 1
     private val normalId = 2
-    private lateinit var notificationManager : NotificationManager
+    private lateinit var notificationManager: NotificationManager
     private val pendingIntent: PendingIntent by lazy {
         PendingIntent.getActivity(
             this,
@@ -29,9 +33,7 @@ class CountdownService : Service() {
     }
 
     private fun createNotificationBuilder(
-        channelId: String,
-        state: StateEnum,
-        countdownTime: Long
+        channelId: String, state: StateEnum, countdownTime: Long
     ): NotificationCompat.Builder {
         val stateText: String = when (state.value) {
             StateEnum.FOCUSING.value -> Constants.FOCUSING_STR
@@ -48,40 +50,39 @@ class CountdownService : Service() {
         }
 
         return NotificationCompat.Builder(this, channelId)
-            .setSmallIcon(android.R.drawable.ic_media_play)
-            .setContentTitle(stateText)
-            .setContentText(contentText)
-            .setContentIntent(pendingIntent)
+            .setSmallIcon(android.R.drawable.ic_media_play).setShowWhen(true)
+            .setContentTitle(stateText).setContentText(contentText).setContentIntent(pendingIntent)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
     }
 
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             Constants.ACTIONENUM.START.name -> {
-                val notification =
-                    createNotificationBuilder(
-                        CHANNEL_ID.FOREGROUND.name,
-                        NotificationData.state,
-                        NotificationData.countdownTime
-                    ).build()
+                val notification = createNotificationBuilder(
+                    CHANNEL_ID.FOREGROUND.name,
+                    NotificationData.state,
+                    NotificationData.countdownTime
+                ).setOngoing(true).setCategory(CATEGORY_STOPWATCH).build()
                 startForeground(foreGroundId, notification)
             }
 
             Constants.ACTIONENUM.UPDATE.name -> {
                 val notification = createNotificationBuilder(
-                    CHANNEL_ID.FOREGROUND.name, NotificationData.state,
+                    CHANNEL_ID.FOREGROUND.name,
+                    NotificationData.state,
                     NotificationData.countdownTime
-                ).build()
-                notificationManager.notify(foreGroundId, notification)
+                ).setOngoing(true).setCategory(CATEGORY_STOPWATCH).build()
                 notificationManager.notify(foreGroundId, notification)
             }
 
             Constants.ACTIONENUM.STOP.name -> {
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 val notification = createNotificationBuilder(
-                    CHANNEL_ID.FOREGROUND.name, NotificationData.state,
+                    CHANNEL_ID.FOREGROUND.name,
+                    NotificationData.state,
                     NotificationData.countdownTime
-                ).setAutoCancel(true).setVisibility(NotificationCompat.VISIBILITY_PUBLIC).build()
+                ).setAutoCancel(true).build()
                 notificationManager.notify(normalId, notification)
                 stopSelf()
             }
@@ -95,14 +96,16 @@ class CountdownService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val foregroundChannel = NotificationChannel(
                 CHANNEL_ID.FOREGROUND.name,
-                "foreground",
+                Constants.CHANNEL_NAME.FOREGROUND.value,
                 NotificationManager.IMPORTANCE_LOW
-            )
+            ).apply {
+                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+            }
             notificationManager.createNotificationChannel(foregroundChannel)
 
             val normalChannel = NotificationChannel(
                 CHANNEL_ID.NORMAL.name,
-                "normal",
+                Constants.CHANNEL_NAME.FOREGROUND.value,
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
                 enableLights(true)

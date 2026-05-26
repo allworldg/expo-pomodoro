@@ -20,6 +20,9 @@ object Constants {
       FOREGROUND,
       NORMAL,
    }
+   enum class CHANNEL_NAME(val value:String){
+      FOREGROUND("倒计时"),NORMAL("普通通知")
+   }
    const val FOCUSING_STR = "正在专注"
    const val RESTING_STR = "正在休息"
    const val FINISH_STR = "已全部完成！"
