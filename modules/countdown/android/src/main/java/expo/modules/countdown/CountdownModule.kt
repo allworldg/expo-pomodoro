@@ -5,11 +5,13 @@ import android.app.Activity
 import android.content.Intent
 import android.os.Build
 import android.os.Handler
+import android.os.HandlerThread
 import android.os.Looper
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import expo.modules.countdown.contants.Constants
 import expo.modules.countdown.contants.EventTypeEnum
+import expo.modules.countdown.contants.IntentExtras
 import expo.modules.countdown.contants.StateEnum
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
@@ -18,7 +20,10 @@ import java.net.URL
 class CountdownModule : Module() {
     private var internalTime: Long = 500
     private val countDownData = CountDownData()
-    private val handler = Handler(Looper.getMainLooper())
+    private val workerThread = HandlerThread("countdown").apply {
+        start()
+    }
+    private val handler = Handler(workerThread.looper)
     private var preSeond: Long = -1L;
     private val runnable = object : Runnable {
         override fun run() {
@@ -36,10 +41,11 @@ class CountdownModule : Module() {
             val second = remainTime / Constants.SECOND;
             if (second != preSeond) {
                 preSeond = second
-                updateNotification(countDownData.state, remainTime)
                 appContext.reactContext?.let {
                     val intent = Intent(it, CountdownService::class.java).apply {
                         action = Constants.ACTIONENUM.UPDATE.name;
+                        putExtra(IntentExtras.COUNTDOWN_TIME, remainTime);
+                        putExtra(IntentExtras.COUNTDOWN_STATE, countDownData.state.name)
                     }
                     ContextCompat.startForegroundService(it, intent)
                 }
@@ -96,11 +102,11 @@ class CountdownModule : Module() {
     private fun finish() {
         handler.removeCallbacks(runnable)
         countDownData.state = StateEnum.STOP
-        NotificationData.countdownTime = -1L;
-        NotificationData.state = StateEnum.STOP;
         appContext.reactContext?.let {
             val intent = Intent(it, CountdownService::class.java).apply {
                 action = Constants.ACTIONENUM.STOP.name;
+                putExtra(IntentExtras.COUNTDOWN_TIME, -1L);
+                putExtra(IntentExtras.COUNTDOWN_STATE, countDownData.state.name)
             }
             it.startService(intent)
         }
@@ -126,19 +132,16 @@ class CountdownModule : Module() {
         )
     }
 
-    private fun updateNotification(state: StateEnum, time: Long) {
-        NotificationData.state = state
-        NotificationData.countdownTime = time;
-    }
-
-
     private fun start() {
         preSeond = -1L;
         appContext.reactContext?.let {
-            NotificationData.state = countDownData.state
-            NotificationData.countdownTime = countDownData.targetTime - System.currentTimeMillis();
             val intent = Intent(it, CountdownService::class.java).apply {
                 action = Constants.ACTIONENUM.START.name;
+                putExtra(
+                    IntentExtras.COUNTDOWN_TIME,
+                    countDownData.targetTime - System.currentTimeMillis()
+                );
+                putExtra(IntentExtras.COUNTDOWN_STATE, countDownData.state.name)
             }
             ContextCompat.startForegroundService(it, intent)
         }
@@ -171,7 +174,7 @@ class CountdownModule : Module() {
         }
     }
 
-    private fun requestNotificationPermission(){
+    private fun requestNotificationPermission() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
             return
         }

@@ -12,9 +12,9 @@ export type CountdownData = {
 }
 
 export enum StateEnum {
-    FOCUSING = "focusing",
-    RESTING = "resting",
-    STOP = "stop"
+    FOCUSING = "FOCUSING",
+    RESTING = "RESTING",
+    STOP = "STOP"
 }
 export type StateChangeData = {
   state: StateEnum;

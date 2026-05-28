@@ -1,4 +1,5 @@
 import { FOCUSING_STR, RESTING_STR } from "@/constants/Constants";
+import { StateEnum } from "@/modules/countdown";
 import { Text, View } from "react-native";
 type Props = {
   state: string;
@@ -6,7 +7,7 @@ type Props = {
   cycles: number;
 };
 export default function PomodoroStatus({ state, curCycle, cycles }: Props) {
-  const stateStr = state === "focusing" ? FOCUSING_STR : RESTING_STR;
+  const stateStr = state === StateEnum.FOCUSING ? FOCUSING_STR : RESTING_STR;
 
   return (
     <View className="items-center">
