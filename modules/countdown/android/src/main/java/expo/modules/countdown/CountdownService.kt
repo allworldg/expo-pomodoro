@@ -11,15 +11,14 @@ import android.content.Intent
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
+import expo.modules.countdown.contants.Channel_ID
 import expo.modules.countdown.contants.Constants
-import expo.modules.countdown.contants.Constants.CHANNEL_ID
 import expo.modules.countdown.contants.IntentExtras
+import expo.modules.countdown.contants.Notification_ID
 import expo.modules.countdown.contants.StateEnum
 
 
 class CountdownService : Service() {
-    private val foreGroundId = 1
-    private val normalId = 2
     private lateinit var notificationManager: NotificationManager
     private val pendingIntent: PendingIntent by lazy {
         PendingIntent.getActivity(
@@ -63,12 +62,12 @@ class CountdownService : Service() {
                     stateName?.let { runCatching { StateEnum.valueOf(it) }.getOrNull() }
                         ?: StateEnum.STOP
                 val notification = createNotificationBuilder(
-                    CHANNEL_ID.FOREGROUND.name,
+                    Channel_ID.FOREGROUND,
                     state,
                     countdownTime
                 ).setCategory(CATEGORY_STOPWATCH).build()
-                println("start foreground notification")
-                startForeground(foreGroundId, notification)
+                notificationManager.cancel(Notification_ID.NORMAL)
+                startForeground(Notification_ID.FOREGROUND, notification)
             }
 
             Constants.ACTIONENUM.UPDATE.name -> {
@@ -78,11 +77,11 @@ class CountdownService : Service() {
                     stateName?.let { runCatching { StateEnum.valueOf(it) }.getOrNull() }
                         ?: StateEnum.FOCUSING
                 val notification = createNotificationBuilder(
-                    CHANNEL_ID.FOREGROUND.name,
+                    Channel_ID.FOREGROUND,
                     state,
                     countdownTime
                 ).setCategory(CATEGORY_STOPWATCH).build()
-                notificationManager.notify(foreGroundId, notification)
+                notificationManager.notify(Notification_ID.FOREGROUND, notification)
             }
 
             Constants.ACTIONENUM.STOP.name -> {
@@ -93,11 +92,11 @@ class CountdownService : Service() {
                     stateName?.let { runCatching { StateEnum.valueOf(it) }.getOrNull() }
                         ?: StateEnum.FOCUSING
                 val notification = createNotificationBuilder(
-                    CHANNEL_ID.NORMAL.name,
+                    Channel_ID.NORMAL,
                     state,
                     countdownTime
                 ).setAutoCancel(true).build()
-                notificationManager.notify(normalId, notification)
+                notificationManager.notify(Notification_ID.NORMAL, notification)
                 stopSelf()
             }
         }
@@ -109,7 +108,7 @@ class CountdownService : Service() {
         notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val foregroundChannel = NotificationChannel(
-                CHANNEL_ID.FOREGROUND.name,
+                Channel_ID.FOREGROUND,
                 Constants.CHANNEL_NAME.FOREGROUND.value,
                 NotificationManager.IMPORTANCE_DEFAULT
             ).apply {
@@ -118,7 +117,7 @@ class CountdownService : Service() {
             notificationManager.createNotificationChannel(foregroundChannel)
 
             val normalChannel = NotificationChannel(
-                CHANNEL_ID.NORMAL.name,
+                Channel_ID.NORMAL,
                 Constants.CHANNEL_NAME.FOREGROUND.value,
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {

@@ -47,7 +47,7 @@ class CountdownModule : Module() {
                         putExtra(IntentExtras.COUNTDOWN_TIME, remainTime);
                         putExtra(IntentExtras.COUNTDOWN_STATE, countDownData.state.name)
                     }
-                    ContextCompat.startForegroundService(it, intent)
+                    it.startService(intent)
                 }
             }
             internalTime = Constants.TimeEnum.NORMAL.value
