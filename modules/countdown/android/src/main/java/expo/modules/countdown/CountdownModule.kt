@@ -1,12 +1,10 @@
 package expo.modules.countdown
 
 import android.Manifest
-import android.app.Activity
 import android.content.Intent
 import android.os.Build
 import android.os.Handler
 import android.os.HandlerThread
-import android.os.Looper
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import expo.modules.countdown.contants.Constants
@@ -43,7 +41,7 @@ class CountdownModule : Module() {
                 preSeond = second
                 appContext.reactContext?.let {
                     val intent = Intent(it, CountdownService::class.java).apply {
-                        action = Constants.ACTIONENUM.UPDATE.name;
+                        action = Constants.ActionEnum.UPDATE.name;
                         putExtra(IntentExtras.COUNTDOWN_TIME, remainTime);
                         putExtra(IntentExtras.COUNTDOWN_STATE, countDownData.state.name)
                     }
@@ -59,15 +57,19 @@ class CountdownModule : Module() {
 
     private fun onStateChanged() {
         preSeond = -1L
+        var shouldNotifyFinished = false
+        val finishState = countDownData.state
         when (countDownData.state) {
             StateEnum.FOCUSING -> {
                 if (hasRest()) {
+                    shouldNotifyFinished = true;
                     countDownData.state = StateEnum.RESTING
                     countDownData.targetTime =
                         countDownData.rest * Constants.MINUTE
                     countDownData.targetTime += System.currentTimeMillis()
                 } else {
                     if (hasNextCycle()) {
+                        shouldNotifyFinished = true;
                         countDownData.curCycle++
                         countDownData.state = StateEnum.FOCUSING
                         countDownData.targetTime =
@@ -77,11 +79,15 @@ class CountdownModule : Module() {
                         finish()
                     }
                 }
+                if(shouldNotifyFinished){
+                   sendFinishIntent(finishState);
+                }
                 sendStateChangeEvent()
             }
 
             StateEnum.RESTING -> {
                 if (hasNextCycle()) {
+                    shouldNotifyFinished = true
                     countDownData.curCycle++
                     countDownData.state = StateEnum.FOCUSING
                     countDownData.targetTime =
@@ -89,6 +95,9 @@ class CountdownModule : Module() {
                     countDownData.targetTime += System.currentTimeMillis()
                 } else {
                     finish()
+                }
+                if(shouldNotifyFinished){
+                    sendFinishIntent(finishState);
                 }
                 sendStateChangeEvent()
             }
@@ -104,13 +113,20 @@ class CountdownModule : Module() {
         countDownData.state = StateEnum.STOP
         appContext.reactContext?.let {
             val intent = Intent(it, CountdownService::class.java).apply {
-                action = Constants.ACTIONENUM.STOP.name;
-                putExtra(IntentExtras.COUNTDOWN_TIME, -1L);
-                putExtra(IntentExtras.COUNTDOWN_STATE, countDownData.state.name)
+                action = Constants.ActionEnum.COMPLETE.name;
             }
             it.startService(intent)
         }
+    }
 
+    private fun sendFinishIntent(finishedState: StateEnum) {
+        appContext.reactContext?.let {
+            val intent = Intent(it, CountdownService::class.java).apply {
+                action = Constants.ActionEnum.FINISH.name;
+                putExtra(IntentExtras.COUNTDOWN_STATE, finishedState.name)
+            }
+            it.startService(intent)
+        }
     }
 
     private fun hasRest(): Boolean {
@@ -136,7 +152,7 @@ class CountdownModule : Module() {
         preSeond = -1L;
         appContext.reactContext?.let {
             val intent = Intent(it, CountdownService::class.java).apply {
-                action = Constants.ACTIONENUM.START.name;
+                action = Constants.ActionEnum.START.name;
                 putExtra(
                     IntentExtras.COUNTDOWN_TIME,
                     countDownData.targetTime - System.currentTimeMillis()

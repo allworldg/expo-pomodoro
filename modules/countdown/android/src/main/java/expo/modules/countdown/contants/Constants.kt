@@ -10,14 +10,15 @@ object Constants {
         NORMAL(500L)
     }
 
-    enum class ACTIONENUM() {
+    enum class ActionEnum() {
         START,
         UPDATE,
-        STOP
+        FINISH,
+        COMPLETE
     }
 
 
-    enum class CHANNEL_NAME(val value: String) {
+    enum class ChannelName(val value: String) {
         FOREGROUND("倒计时"), NORMAL("普通通知")
     }
 
@@ -26,17 +27,25 @@ object Constants {
     const val FINISH_STR = "已全部完成！"
 }
 
+object NotificationText {
+    const val TEXT_FOCUSING = "正在专注"
+    const val TEXT_RESTING = "正在休息"
+    const val TEXT_FOCUS_COMPLETE="已完成专注"
+    const val TEXT_REST_COMPLETE="已完成休息"
+    const val TEXT_COMPLETE = "已全部完成！"
+}
+
 object IntentExtras {
     const val COUNTDOWN_TIME = "countdownTime";
     const val COUNTDOWN_STATE = "countdownState";
 }
 
-object Channel_ID {
+object ChannelId {
     const val FOREGROUND = "foreground"
     const val NORMAL = "normal"
 }
 
-object Notification_ID{
+object NotificationId {
     const val FOREGROUND = 1
 
     const val NORMAL = 2
