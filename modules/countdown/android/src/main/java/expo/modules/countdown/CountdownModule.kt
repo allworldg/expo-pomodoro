@@ -20,6 +20,8 @@ import expo.modules.countdown.data.entity.CountdownSetting
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import java.net.URL
+import java.time.LocalDate
+import java.time.ZoneId
 
 class CountdownModule : Module() {
     private var internalTime: Long = 500
@@ -68,6 +70,9 @@ class CountdownModule : Module() {
         val finishState = countDownData.state
         when (countDownData.state) {
             StateEnum.FOCUSING -> {
+                var focusDao = db.focusDao()
+                val localDate = LocalDate.now(ZoneId.systemDefault()).toString();
+//                focusDao.search()
                 if (hasRest()) {
                     shouldNotifyFinished = true;
                     countDownData.state = StateEnum.RESTING
