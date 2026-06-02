@@ -4,6 +4,7 @@ import "@/global.css";
 import { StateChangeData, StateEnum } from "@/modules/countdown";
 import { EventType } from "@/modules/countdown/src/CountdownConstant";
 import CountdownModule from "@/modules/countdown/src/CountdownModule";
+import { checkInRange } from "@/utils/InputCheck";
 import { useEffect, useRef, useState } from "react";
 import { Text, TextInput, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
@@ -20,6 +21,10 @@ export default function Index() {
   const [curCycle, setCurCycle] = useState<number>(1);
   const [stateCycles, setStateCycles] = useState<number>(0);
   useEffect(() => {
+    var setting = CountdownModule.getCountdownSetting();
+    setPomodoro(setting.pomodoro.toString());
+    setRest(setting.rest.toString());
+    setCycles(setting.cycles.toString());
     subTick.current = CountdownModule.addListener(
       EventType.TICK,
       (data: { remainTime: number }) => {
@@ -52,7 +57,27 @@ export default function Index() {
     };
   }, []);
 
+  function updateSetting() {
+    if (
+      checkInRange(pomodoro, 1, 999) &&
+      checkInRange(rest, 0, 999) &&
+      checkInRange(cycles, 1, 999)
+    ) {      
+      CountdownModule.updateSetting({
+        pomodoro: Number(pomodoro),
+        rest: Number(rest),
+        cycles: Number(cycles),
+      });
+    } else {
+      var setting = CountdownModule.getCountdownSetting();
+      setPomodoro(setting.pomodoro.toString());
+      setRest(setting.rest.toString());
+      setCycles(setting.cycles.toString());      
+    }
+  }
+
   function start() {
+    updateSetting();
     CountdownModule.startCountdown({
       pomodoro: Number(pomodoro),
       rest: Number(rest),

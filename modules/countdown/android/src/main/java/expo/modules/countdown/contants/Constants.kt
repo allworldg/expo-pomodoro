@@ -5,6 +5,11 @@ object Constants {
     const val SECOND = 1000 * MILLISECOND;
     const val MINUTE = 3 * SECOND;
 
+    const val POMODORO = 5
+    const val REST = 1
+    const val CYCLES = 1
+
+
     enum class TimeEnum(val value: Long) {
         QUICK(10L),
         NORMAL(500L)
@@ -30,8 +35,8 @@ object Constants {
 object NotificationText {
     const val TEXT_FOCUSING = "正在专注"
     const val TEXT_RESTING = "正在休息"
-    const val TEXT_FOCUS_COMPLETE="已完成专注"
-    const val TEXT_REST_COMPLETE="已完成休息"
+    const val TEXT_FOCUS_COMPLETE = "已完成专注"
+    const val TEXT_REST_COMPLETE = "已完成休息"
     const val TEXT_COMPLETE = "已全部完成！"
 }
 

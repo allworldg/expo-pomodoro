@@ -4,7 +4,7 @@ import expo.modules.countdown.contants.StateEnum
 import expo.modules.kotlin.records.Field
 import expo.modules.kotlin.records.Record
 
-class CountDownData : Record{
+class CountDownData : Record {
     @Field
     var pomodoro: Int = 0;
 
@@ -21,7 +21,7 @@ class CountDownData : Record{
     var state: StateEnum = StateEnum.STOP;
 
     @Field
-    var curCycle:Int = 1;
+    var curCycle: Int = 1;
 
 
     override fun toString(): String {
@@ -30,7 +30,7 @@ class CountDownData : Record{
                 "pomodoro=$pomodoro, " +
                 "rest=$rest, " +
                 "cycles=$cycles, " +
-                "curcycle = $curCycle"+
+                "curcycle = $curCycle" +
                 "targetTime=$targetTime, " +
                 "curState=$state)"
     }

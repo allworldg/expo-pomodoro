@@ -7,10 +7,16 @@ import android.os.Handler
 import android.os.HandlerThread
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.room.Room
 import expo.modules.countdown.contants.Constants
+import expo.modules.countdown.contants.Constants.CYCLES
+import expo.modules.countdown.contants.Constants.POMODORO
+import expo.modules.countdown.contants.Constants.REST
 import expo.modules.countdown.contants.EventTypeEnum
 import expo.modules.countdown.contants.IntentExtras
 import expo.modules.countdown.contants.StateEnum
+import expo.modules.countdown.data.SettingDatabase
+import expo.modules.countdown.data.entity.CountdownSetting
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import java.net.URL
@@ -31,6 +37,7 @@ class CountdownModule : Module() {
             }
         }
     }
+    private lateinit var db: SettingDatabase
 
     private fun countdown() {
         val remainTime = countDownData.targetTime - System.currentTimeMillis()
@@ -79,8 +86,8 @@ class CountdownModule : Module() {
                         finish()
                     }
                 }
-                if(shouldNotifyFinished){
-                   sendFinishIntent(finishState);
+                if (shouldNotifyFinished) {
+                    sendFinishIntent(finishState);
                 }
                 sendStateChangeEvent()
             }
@@ -96,7 +103,7 @@ class CountdownModule : Module() {
                 } else {
                     finish()
                 }
-                if(shouldNotifyFinished){
+                if (shouldNotifyFinished) {
                     sendFinishIntent(finishState);
                 }
                 sendStateChangeEvent()
@@ -178,17 +185,6 @@ class CountdownModule : Module() {
         }
     }
 
-    private fun init(stateData: CountDownData) {
-        countDownData.apply {
-            this.pomodoro = stateData.pomodoro
-            this.cycles = stateData.cycles
-            this.rest = stateData.rest
-            this.state = StateEnum.FOCUSING
-            this.curCycle = 1
-            countDownData.targetTime =
-                this.pomodoro.toLong() * Constants.MINUTE + System.currentTimeMillis()
-        }
-    }
 
     private fun requestNotificationPermission() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
@@ -226,15 +222,52 @@ class CountdownModule : Module() {
         Function("hello") {
             "Hello world22"
         }
+        Function("getCountdownSetting") {
+            db = Room.databaseBuilder(
+                requireNotNull(appContext.reactContext) { "rectcontext is null" },
+                SettingDatabase::class.java,
+                "setting.db"
+            ).build()
+            var settingDao = db.settingDao()
+            lateinit var countdownSetting: CountdownSetting
+            if (settingDao.getAll().isEmpty()) {
+                countdownSetting = CountdownSetting(1, POMODORO, REST, CYCLES)
+                settingDao.insertAll(countdownSetting)
+            } else {
+                countdownSetting = settingDao.getFirst();
+            }
+            return@Function mapOf(
+                "pomodoro" to countdownSetting.pomodoro,
+                "rest" to countdownSetting.rest,
+                "cycles" to countdownSetting.cycles
+            )
+        }
+        AsyncFunction("updateSetting") { countDownData: CountDownData ->
+            var settingDao = db.settingDao()
+            var setting = settingDao.getFirst()
+            settingDao.update(
+                setting.copy(
+                    pomodoro = countDownData.pomodoro,
+                    rest = countDownData.rest,
+                    cycles = countDownData.cycles
+                )
+            )
+        }
 
         Function(name = "stopCountdown") {
             stop()
         }
-        Function("requestNotificationPermission") {
-        }
 
-        AsyncFunction("startCountdown") { stateData: CountDownData ->
-            init(stateData)
+        Function("startCountdown") { countdownData: CountDownData ->
+            countDownData.apply {
+                this.pomodoro = countdownData.pomodoro
+                this.cycles = countdownData.cycles
+                this.rest = countdownData.rest
+                this.state = StateEnum.FOCUSING
+                this.curCycle = 1
+                countDownData.targetTime =
+                    this.pomodoro.toLong() * Constants.MINUTE + System.currentTimeMillis()
+            }
             requestNotificationPermission()
             start()
         }

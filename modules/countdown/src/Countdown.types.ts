@@ -10,6 +10,11 @@ export type CountdownData = {
   rest:number;
   cycles:number;
 }
+export type CountdownSetting={
+  pomodoro:number;
+  rest:number;
+  cycles:number;
+}
 
 export enum StateEnum {
     FOCUSING = "FOCUSING",
