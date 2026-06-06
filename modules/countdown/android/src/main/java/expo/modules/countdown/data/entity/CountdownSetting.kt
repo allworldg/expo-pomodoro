@@ -5,7 +5,7 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 
 
-@Entity
+@Entity(tableName = "countdown_setting")
 data class CountdownSetting(
     @PrimaryKey val id: Int,
     @ColumnInfo(name = "pomodoro") val pomodoro: Int,

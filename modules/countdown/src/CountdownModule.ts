@@ -4,6 +4,7 @@ import {
   CountdownData,
   CountdownModuleEvents,
   CountdownSetting,
+  FocusRecord,
 } from "./Countdown.types";
 
 declare class CountdownModule extends NativeModule<CountdownModuleEvents> {
@@ -15,6 +16,7 @@ declare class CountdownModule extends NativeModule<CountdownModuleEvents> {
   initCountdownSetting(): CountdownSetting;
   updateSetting(value: CountdownSetting): void;
   getCountdownSetting(): CountdownSetting;
+  getRecord(): Promise<FocusRecord>;
 }
 
 // This call loads the native module object from the JSI.

@@ -12,16 +12,18 @@ import expo.modules.countdown.contants.Constants
 import expo.modules.countdown.contants.Constants.CYCLES
 import expo.modules.countdown.contants.Constants.POMODORO
 import expo.modules.countdown.contants.Constants.REST
-import expo.modules.countdown.contants.EventTypeEnum
+import expo.modules.countdown.contants.EventEnum
 import expo.modules.countdown.contants.IntentExtras
 import expo.modules.countdown.contants.StateEnum
 import expo.modules.countdown.data.SettingDatabase
 import expo.modules.countdown.data.entity.CountdownSetting
+import expo.modules.countdown.data.entity.FocusDailyRecord
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import java.net.URL
-import java.time.LocalDate
-import java.time.ZoneId
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class CountdownModule : Module() {
     private var internalTime: Long = 500
@@ -39,7 +41,13 @@ class CountdownModule : Module() {
             }
         }
     }
-    private lateinit var db: SettingDatabase
+    private val db: SettingDatabase by lazy {
+        Room.databaseBuilder(
+            requireNotNull(appContext.reactContext) { "reactContext is null" },
+            SettingDatabase::class.java,
+            "setting.db"
+        ).build()
+    }
 
     private fun countdown() {
         val remainTime = countDownData.targetTime - System.currentTimeMillis()
@@ -70,22 +78,47 @@ class CountdownModule : Module() {
         val finishState = countDownData.state
         when (countDownData.state) {
             StateEnum.FOCUSING -> {
-                var focusDao = db.focusDao()
-                val localDate = LocalDate.now(ZoneId.systemDefault()).toString();
-//                focusDao.search()
+                var focusDao = db.recordDao()
+                val today = SimpleDateFormat(
+                    "yyyy-MM-dd", Locale.getDefault()
+                ).format(Date())
+                var result = focusDao.search(today)
+                if (result == null) {
+                    var record = FocusDailyRecord(
+                        today, 1, countDownData.pomodoro * Constants.MINUTE
+                    )
+                    result = record
+                    focusDao.insertAll(record)
+                } else {
+                    result = result.copy(
+                        focusCount = result.focusCount + 1,
+                        focusDuration = result.focusDuration + countDownData.pomodoro * Constants.MINUTE
+                    )
+                    focusDao.update(
+                        result
+                    )
+                }
+                val totalDuration = focusDao.getTotalFocusDuration()
+                sendEvent(
+                    EventEnum.RECORD.value,
+                    mapOf(
+                        "focusCount" to result.focusCount,
+                        "focusDuration" to result.focusDuration,
+                        "totalDuration" to totalDuration
+                    )
+                )
+
                 if (hasRest()) {
                     shouldNotifyFinished = true;
                     countDownData.state = StateEnum.RESTING
-                    countDownData.targetTime =
-                        countDownData.rest * Constants.MINUTE
+                    countDownData.targetTime = countDownData.rest * Constants.MINUTE
                     countDownData.targetTime += System.currentTimeMillis()
                 } else {
                     if (hasNextCycle()) {
                         shouldNotifyFinished = true;
                         countDownData.curCycle++
                         countDownData.state = StateEnum.FOCUSING
-                        countDownData.targetTime =
-                            countDownData.pomodoro * Constants.MINUTE
+                        countDownData.targetTime = countDownData.pomodoro * Constants.MINUTE
                         countDownData.targetTime += System.currentTimeMillis()
                     } else {
                         finish()
@@ -102,8 +135,7 @@ class CountdownModule : Module() {
                     shouldNotifyFinished = true
                     countDownData.curCycle++
                     countDownData.state = StateEnum.FOCUSING
-                    countDownData.targetTime =
-                        countDownData.pomodoro * Constants.MINUTE
+                    countDownData.targetTime = countDownData.pomodoro * Constants.MINUTE
                     countDownData.targetTime += System.currentTimeMillis()
                 } else {
                     finish()
@@ -151,8 +183,7 @@ class CountdownModule : Module() {
 
     private fun sendStateChangeEvent() {
         sendEvent(
-            EventTypeEnum.STATECHANGE.value,
-            mapOf(
+            EventEnum.STATECHANGE.value, mapOf(
                 "state" to countDownData.state.value,
                 "curCycle" to countDownData.curCycle,
                 "cycles" to countDownData.cycles
@@ -179,8 +210,9 @@ class CountdownModule : Module() {
     }
 
     private fun emitTick(remainTime: Long) {
-        sendEvent(EventTypeEnum.TICK.value, mapOf("remainTime" to remainTime))
+        sendEvent(EventEnum.TICK.value, mapOf("remainTime" to remainTime))
     }
+
 
     private fun stop() {
         handler.removeCallbacks(runnable)
@@ -197,9 +229,7 @@ class CountdownModule : Module() {
         }
         appContext.currentActivity?.let {
             ActivityCompat.requestPermissions(
-                it,
-                arrayOf(Manifest.permission.POST_NOTIFICATIONS),
-                1001
+                it, arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1001
             )
         }
     }
@@ -221,18 +251,23 @@ class CountdownModule : Module() {
         }
 
         // Defines event names that the module can send to JavaScript.
-        Events(EventTypeEnum.TICK.value, EventTypeEnum.STATECHANGE.value, EventTypeEnum.STOP.value)
+        Events(
+            EventEnum.TICK.value,
+            EventEnum.STATECHANGE.value,
+            EventEnum.STOP.value,
+            EventEnum.RECORD.value
+        )
 
         // Defines a JavaScript synchronous function that runs the native code on the JavaScript thread.
         Function("hello") {
             "Hello world22"
         }
         Function("getCountdownSetting") {
-            db = Room.databaseBuilder(
-                requireNotNull(appContext.reactContext) { "rectcontext is null" },
-                SettingDatabase::class.java,
-                "setting.db"
-            ).build()
+//            db = Room.databaseBuilder(
+//                requireNotNull(appContext.reactContext) { "rectcontext is null" },
+//                SettingDatabase::class.java,
+//                "setting.db"
+//            ).build()
             var settingDao = db.settingDao()
             lateinit var countdownSetting: CountdownSetting
             if (settingDao.getAll().isEmpty()) {
@@ -285,6 +320,22 @@ class CountdownModule : Module() {
                 "onChange", mapOf(
                     "value" to value
                 )
+            )
+        }
+
+        AsyncFunction("getRecord") {
+            val recordDao = db.recordDao()
+            val totalDuration = recordDao.getTotalFocusDuration();
+
+            var result = recordDao.search(
+                SimpleDateFormat(
+                    "yyyy-MM-dd", Locale.getDefault()
+                ).format(Date())
+            )
+            mapOf(
+                "focusCount" to (result?.focusCount ?: 0),
+                "focusDuration" to (result?.focusDuration ?: 0),
+                "totalDuration" to totalDuration
             )
         }
         OnDestroy {

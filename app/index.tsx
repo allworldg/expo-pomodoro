@@ -1,8 +1,9 @@
 import ClockDisplay from "@/components/ClockDisplay";
 import PomodoroStatus from "@/components/PomodoroStatus";
+import { Record } from "@/components/Record";
 import "@/global.css";
 import { StateChangeData, StateEnum } from "@/modules/countdown";
-import { EventType } from "@/modules/countdown/src/CountdownConstant";
+import { Event } from "@/modules/countdown/src/CountdownConstant";
 import CountdownModule from "@/modules/countdown/src/CountdownModule";
 import { checkInRange } from "@/utils/InputCheck";
 import { useEffect, useRef, useState } from "react";
@@ -26,14 +27,14 @@ export default function Index() {
     setRest(setting.rest.toString());
     setCycles(setting.cycles.toString());
     subTick.current = CountdownModule.addListener(
-      EventType.TICK,
+      Event.TICK,
       (data: { remainTime: number }) => {
         const { remainTime } = data;
         setRemainTime(remainTime);
       }
     );
     subStateChange.current = CountdownModule.addListener(
-      EventType.STATECHANGE,
+      Event.STATECHANGE,
       (data: StateChangeData) => {
         const {
           state: data_state,
@@ -62,7 +63,7 @@ export default function Index() {
       checkInRange(pomodoro, 1, 999) &&
       checkInRange(rest, 0, 999) &&
       checkInRange(cycles, 1, 999)
-    ) {      
+    ) {
       CountdownModule.updateSetting({
         pomodoro: Number(pomodoro),
         rest: Number(rest),
@@ -72,7 +73,7 @@ export default function Index() {
       var setting = CountdownModule.getCountdownSetting();
       setPomodoro(setting.pomodoro.toString());
       setRest(setting.rest.toString());
-      setCycles(setting.cycles.toString());      
+      setCycles(setting.cycles.toString());
     }
   }
 
@@ -175,11 +176,7 @@ export default function Index() {
           </View>
         </View>
       </View>
-      <View className="mt-auto">
-        <Text>当日专注次数: x</Text>
-        <Text>时长：xx分钟</Text>
-        <Text>总时长：x小时x分钟</Text>
-      </View>
+      <Record></Record>
     </View>
   );
 }

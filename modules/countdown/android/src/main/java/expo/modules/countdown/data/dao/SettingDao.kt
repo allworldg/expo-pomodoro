@@ -8,13 +8,13 @@ import expo.modules.countdown.data.entity.CountdownSetting
 
 @Dao
 interface SettingDao {
-    @Query("SELECT * FROM countdownsetting")
+    @Query("SELECT * FROM countdown_setting")
     fun getAll(): List<CountdownSetting>
 
-    @Query("SELECT * FROM CountdownSetting WHERE id IN (:ids)")
+    @Query("SELECT * FROM countdown_setting WHERE id IN (:ids)")
     fun loadAllByIds(ids: IntArray): List<CountdownSetting>
 
-    @Query("select * from CountdownSetting limit 1")
+    @Query("select * from countdown_setting limit 1")
     fun getFirst(): CountdownSetting
 
     @Insert
