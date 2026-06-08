@@ -2,6 +2,7 @@ package expo.modules.countdown
 
 import android.Manifest
 import android.content.Intent
+import android.media.MediaPlayer
 import android.os.Build
 import android.os.Handler
 import android.os.HandlerThread
@@ -13,6 +14,7 @@ import expo.modules.countdown.contants.Constants.CYCLES
 import expo.modules.countdown.contants.Constants.POMODORO
 import expo.modules.countdown.contants.Constants.REST
 import expo.modules.countdown.contants.EventEnum
+import expo.modules.countdown.contants.InitData
 import expo.modules.countdown.contants.IntentExtras
 import expo.modules.countdown.contants.StateEnum
 import expo.modules.countdown.data.SettingDatabase
@@ -68,8 +70,18 @@ class CountdownModule : Module() {
             internalTime = Constants.TimeEnum.NORMAL.value
             return
         }
+        playMusic()
         onStateChanged()
         internalTime = Constants.TimeEnum.QUICK.value
+    }
+
+    private fun playMusic() {
+        appContext.reactContext?.let {
+            val intent = Intent(it, CountdownService::class.java).apply {
+                action = Constants.ActionEnum.PLAYMUSIC.name
+            }
+            it.startService(intent)
+        }
     }
 
     private fun onStateChanged() {
@@ -258,20 +270,18 @@ class CountdownModule : Module() {
             EventEnum.RECORD.value
         )
 
-        // Defines a JavaScript synchronous function that runs the native code on the JavaScript thread.
-        Function("hello") {
-            "Hello world22"
-        }
         Function("getCountdownSetting") {
-//            db = Room.databaseBuilder(
-//                requireNotNull(appContext.reactContext) { "rectcontext is null" },
-//                SettingDatabase::class.java,
-//                "setting.db"
-//            ).build()
             var settingDao = db.settingDao()
             lateinit var countdownSetting: CountdownSetting
             if (settingDao.getAll().isEmpty()) {
-                countdownSetting = CountdownSetting(1, POMODORO, REST, CYCLES)
+                countdownSetting =
+                    CountdownSetting(
+                        1,
+                        InitData.POMODORO,
+                        InitData.REST,
+                        InitData.CYCLE,
+                        InitData.getMusicUri(appContext.reactContext!!.packageName)
+                    )
                 settingDao.insertAll(countdownSetting)
             } else {
                 countdownSetting = settingDao.getFirst();
@@ -279,7 +289,9 @@ class CountdownModule : Module() {
             return@Function mapOf(
                 "pomodoro" to countdownSetting.pomodoro,
                 "rest" to countdownSetting.rest,
-                "cycles" to countdownSetting.cycles
+                "cycles" to countdownSetting.cycles,
+                "ringtoneUri" to countdownSetting.ringtoneUri?.substringAfterLast("/")
+                    ?.substringBeforeLast(".")
             )
         }
         AsyncFunction("updateSetting") { countDownData: CountDownData ->

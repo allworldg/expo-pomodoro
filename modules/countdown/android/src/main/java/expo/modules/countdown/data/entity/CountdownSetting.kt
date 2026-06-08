@@ -11,4 +11,5 @@ data class CountdownSetting(
     @ColumnInfo(name = "pomodoro") val pomodoro: Int,
     @ColumnInfo(name = "rest") val rest: Int,
     @ColumnInfo(name="cycles") val cycles: Int,
+    @ColumnInfo(name="ringtoneUri") val ringtoneUri: String?
 )

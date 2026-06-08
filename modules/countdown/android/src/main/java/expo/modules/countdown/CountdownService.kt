@@ -8,6 +8,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
+import android.media.MediaPlayer
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
@@ -21,6 +22,7 @@ import expo.modules.countdown.contants.StateEnum
 
 class CountdownService : Service() {
     private lateinit var notificationManager: NotificationManager
+    private var mediaPlayer: MediaPlayer? = null;
     private val pendingIntent: PendingIntent by lazy {
         PendingIntent.getActivity(
             this,
@@ -35,6 +37,16 @@ class CountdownService : Service() {
             .setSmallIcon(android.R.drawable.ic_media_play)
             .setContentIntent(pendingIntent)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC).setShowWhen(false)
+    }
+
+    private fun playFinishSound() {
+        mediaPlayer?.release()
+        mediaPlayer = MediaPlayer.create(this, R.raw.finish)
+        mediaPlayer?.setOnCompletionListener {
+            it.release()
+            mediaPlayer = null
+        }
+        mediaPlayer?.start()
     }
 
     private fun getStateText(state: StateEnum): String {
@@ -101,6 +113,7 @@ class CountdownService : Service() {
                     StateEnum.RESTING.name -> {
                         NotificationText.TEXT_REST_COMPLETE
                     }
+
                     else -> {}
                 }.toString()
                 val notification =
@@ -120,6 +133,10 @@ class CountdownService : Service() {
                         .build();
                 notificationManager.notify(NotificationId.NORMAL, notification)
                 stopSelf()
+            }
+            Constants.ActionEnum.PLAYMUSIC.name->{
+                println("playmusic start")
+                playFinishSound()
             }
         }
         return START_STICKY

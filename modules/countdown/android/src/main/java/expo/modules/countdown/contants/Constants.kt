@@ -1,5 +1,7 @@
 package expo.modules.countdown.contants
 
+import expo.modules.countdown.R
+
 object Constants {
     const val MILLISECOND = 1L;
     const val SECOND = 1000 * MILLISECOND;
@@ -19,7 +21,10 @@ object Constants {
         START,
         UPDATE,
         FINISH,
-        COMPLETE
+        COMPLETE,
+
+        PLAYMUSIC
+
     }
 
 
@@ -54,4 +59,13 @@ object NotificationId {
     const val FOREGROUND = 1
 
     const val NORMAL = 2
+}
+
+object InitData {
+    const val POMODORO = 1
+    const val REST = 1
+    const val CYCLE = 1
+    fun getMusicUri(packageName: String): String {
+        return "android.resource://$packageName/raw/finish"
+    }
 }
