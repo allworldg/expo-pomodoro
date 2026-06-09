@@ -1,20 +1,29 @@
 import ClockDisplay from "@/components/ClockDisplay";
+import CountdownInput from "@/components/CountdownInput";
 import PomodoroStatus from "@/components/PomodoroStatus";
 import { Record } from "@/components/Record";
 import "@/global.css";
-import { StateChangeData, StateEnum } from "@/modules/countdown";
+import {
+  CountdownSettingInput,
+  StateChangeData,
+  StateEnum,
+} from "@/modules/countdown";
 import { Event } from "@/modules/countdown/src/CountdownConstant";
 import CountdownModule from "@/modules/countdown/src/CountdownModule";
 import { checkInRange } from "@/utils/InputCheck";
 import { useEffect, useRef, useState } from "react";
-import { Text, TextInput, View } from "react-native";
+import { View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 
 export default function Index() {
   const [isStarted, setIsStarted] = useState(false);
-  const [pomodoro, setPomodoro] = useState<string>("1");
-  const [rest, setRest] = useState<string>("0");
-  const [cycles, setCycles] = useState<string>("1");
+  const [countdownSetting, setCountdownSetting] =
+    useState<CountdownSettingInput>({
+      pomodoro: "",
+      rest: "",
+      cycles: "",
+      ringtoneUri: "",
+    });
   const [state, setState] = useState<string>("");
   const [remainTime, setRemainTime] = useState<number>(0);
   const subTick = useRef<any>(null);
@@ -23,9 +32,12 @@ export default function Index() {
   const [stateCycles, setStateCycles] = useState<number>(0);
   useEffect(() => {
     var setting = CountdownModule.getCountdownSetting();
-    setPomodoro(setting.pomodoro.toString());
-    setRest(setting.rest.toString());
-    setCycles(setting.cycles.toString());
+    setCountdownSetting({
+      pomodoro: setting.pomodoro.toString(),
+      rest: setting.rest.toString(),
+      cycles: setting.cycles.toString(),
+      ringtoneUri: setting.ringtoneUri,
+    });
     subTick.current = CountdownModule.addListener(
       Event.TICK,
       (data: { remainTime: number }) => {
@@ -59,6 +71,9 @@ export default function Index() {
   }, []);
 
   function updateSetting() {
+    const pomodoro = countdownSetting.pomodoro;
+    const rest = countdownSetting.rest;
+    const cycles = countdownSetting.cycles;
     if (
       checkInRange(pomodoro, 1, 999) &&
       checkInRange(rest, 0, 999) &&
@@ -68,21 +83,25 @@ export default function Index() {
         pomodoro: Number(pomodoro),
         rest: Number(rest),
         cycles: Number(cycles),
+        ringtoneUri: "",
       });
     } else {
       var setting = CountdownModule.getCountdownSetting();
-      setPomodoro(setting.pomodoro.toString());
-      setRest(setting.rest.toString());
-      setCycles(setting.cycles.toString());
+      setCountdownSetting((prev) => ({
+        ...prev,
+        pomodoro: setting.pomodoro.toString(),
+        rest: setting.rest.toString(),
+        cycles: setting.cycles.toString(),
+      }));
     }
   }
 
   function start() {
     updateSetting();
     CountdownModule.startCountdown({
-      pomodoro: Number(pomodoro),
-      rest: Number(rest),
-      cycles: Number(cycles),
+      pomodoro: Number(countdownSetting.pomodoro),
+      rest: Number(countdownSetting.rest),
+      cycles: Number(countdownSetting.cycles),
     });
   }
   function stop() {
@@ -143,38 +162,10 @@ export default function Index() {
         }
       </View>
       <View className="items-center">
-        <View>
-          <View className="flex-row mb-6">
-            <Text>番茄: </Text>
-            <TextInput
-              className="border-b py-0 ml-2 w-14  text-center"
-              value={pomodoro}
-              maxLength={4}
-              onChangeText={setPomodoro}
-            ></TextInput>
-            <Text className="ml-2">分钟</Text>
-          </View>
-          <View className="flex-row mb-6">
-            <Text>休息: </Text>
-            <TextInput
-              className="border-b py-0 ml-2 w-14 text-center"
-              value={rest}
-              onChangeText={setRest}
-              maxLength={4}
-            ></TextInput>
-            <Text className="ml-2">分钟</Text>
-          </View>
-          <View className="flex-row mb-6">
-            <Text>循环: </Text>
-            <TextInput
-              className="border-b py-0 ml-2 w-14 text-center"
-              value={cycles}
-              onChangeText={setCycles}
-              maxLength={4}
-            ></TextInput>
-            <Text className="ml-2">次</Text>
-          </View>
-        </View>
+        <CountdownInput
+          value={countdownSetting}
+          onChange={setCountdownSetting}
+        ></CountdownInput>
       </View>
       <View></View>
       <Record></Record>

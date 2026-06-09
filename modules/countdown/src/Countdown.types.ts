@@ -14,6 +14,13 @@ export type CountdownSetting = {
   pomodoro: number;
   rest: number;
   cycles: number;
+  ringtoneUri: string;
+};
+export type CountdownSettingInput = {
+  pomodoro: string;
+  rest: string;
+  cycles: string;
+  ringtoneUri: string;
 };
 
 export enum StateEnum {
