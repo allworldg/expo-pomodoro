@@ -11,10 +11,9 @@ object Constants {
     const val REST = 1
     const val CYCLES = 1
 
-
-    enum class TimeEnum(val value: Long) {
-        QUICK(10L),
-        NORMAL(500L)
+    object InternalTime{
+        const val QUICK=10L
+        const val NORMAL=500L
     }
 
     enum class ActionEnum() {
@@ -48,6 +47,7 @@ object NotificationText {
 object IntentExtras {
     const val COUNTDOWN_TIME = "countdownTime";
     const val COUNTDOWN_STATE = "countdownState";
+    const val PLAY_MUSIC = "playMusic"
 }
 
 object ChannelId {

@@ -9,6 +9,7 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
 import android.media.MediaPlayer
+import android.net.Uri
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
@@ -36,17 +37,20 @@ class CountdownService : Service() {
         return NotificationCompat.Builder(this, channelId)
             .setSmallIcon(android.R.drawable.ic_media_play)
             .setContentIntent(pendingIntent)
+            .setSilent(true)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC).setShowWhen(false)
     }
 
-    private fun playFinishSound() {
+    private fun playFinishSound(ringtoneUri: String?) {
         mediaPlayer?.release()
-        mediaPlayer = MediaPlayer.create(this, null)
-        mediaPlayer?.setOnCompletionListener {
-            it.release()
-            mediaPlayer = null
+        ringtoneUri?.let {
+            mediaPlayer = MediaPlayer.create(this, Uri.parse(it))
+            mediaPlayer?.setOnCompletionListener {
+                it.release()
+                mediaPlayer = null
+            }
+            mediaPlayer?.start()
         }
-        mediaPlayer?.start()
     }
 
     private fun getStateText(state: StateEnum): String {
@@ -136,8 +140,8 @@ class CountdownService : Service() {
             }
 
             Constants.ActionEnum.PLAYMUSIC.name -> {
-                println("playmusic start")
-                playFinishSound()
+                var ringtoneUri = intent.getStringExtra(IntentExtras.PLAY_MUSIC)
+                playFinishSound(ringtoneUri)
             }
         }
         return START_STICKY

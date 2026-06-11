@@ -6,8 +6,6 @@ import android.content.Intent
 import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Build
-import android.os.Handler
-import android.os.HandlerThread
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.room.Room
@@ -19,13 +17,15 @@ import expo.modules.countdown.contants.StateEnum
 import expo.modules.countdown.data.SettingDatabase
 import expo.modules.countdown.data.entity.CountdownSetting
 import expo.modules.countdown.data.entity.FocusDailyRecord
-import expo.modules.kotlin.exception.Exceptions
 import expo.modules.kotlin.functions.Coroutine
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.net.URL
@@ -34,23 +34,13 @@ import java.util.Date
 import java.util.Locale
 
 class CountdownModule : Module() {
-    private var internalTime: Long = 500
+    private var internalTime: Long = Constants.InternalTime.NORMAL
     private val countDownData = CountDownData()
-    private val workerThread = HandlerThread("countdown").apply {
-        start()
-    }
-    private val handler = Handler(workerThread.looper)
     private var preSeond: Long = -1L;
     private val coroutineScope =
-        CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val runnable = object : Runnable {
-        override fun run() {
-            countdown()
-            if (countDownData.state != StateEnum.STOP) {
-                handler.postDelayed(this, internalTime)
-            }
-        }
-    }
+        CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private var countdownJob: Job? = null
+    private var ringtoneUri:String? = null
     private val db: SettingDatabase by lazy {
         Room.databaseBuilder(
             requireNotNull(appContext.reactContext) { "reactContext is null" },
@@ -76,18 +66,19 @@ class CountdownModule : Module() {
                     it.startService(intent)
                 }
             }
-            internalTime = Constants.TimeEnum.NORMAL.value
+            internalTime = Constants.InternalTime.NORMAL
             return
         }
         playMusic()
         onStateChanged()
-        internalTime = Constants.TimeEnum.QUICK.value
+        internalTime = Constants.InternalTime.QUICK
     }
 
     private fun playMusic() {
         appContext.reactContext?.let {
             val intent = Intent(it, CountdownService::class.java).apply {
                 action = Constants.ActionEnum.PLAYMUSIC.name
+                putExtra(IntentExtras.PLAY_MUSIC,ringtoneUri)
             }
             it.startService(intent)
         }
@@ -174,7 +165,7 @@ class CountdownModule : Module() {
     }
 
     private fun finish() {
-        handler.removeCallbacks(runnable)
+        countdownJob?.cancel()
         countDownData.state = StateEnum.STOP
         appContext.reactContext?.let {
             val intent = Intent(it, CountdownService::class.java).apply {
@@ -226,9 +217,16 @@ class CountdownModule : Module() {
             }
             ContextCompat.startForegroundService(it, intent)
         }
-        handler.removeCallbacks(runnable)
+        countdownJob?.cancel()
         sendStateChangeEvent()
-        handler.postDelayed(runnable, 10L)
+        countdownJob = coroutineScope.launch {
+            delay(Constants.InternalTime.QUICK)
+            while (isActive && countDownData.state != StateEnum.STOP) {
+                countdown()
+                delay(internalTime)
+            }
+        }
+
     }
 
     private fun emitTick(remainTime: Long) {
@@ -237,7 +235,7 @@ class CountdownModule : Module() {
 
 
     private fun stop() {
-        handler.removeCallbacks(runnable)
+        countdownJob?.cancel()
         appContext.reactContext?.let {
             val intent = Intent(it, CountdownService::class.java)
             it.stopService(intent)
@@ -286,9 +284,10 @@ class CountdownModule : Module() {
             val activity = requireNotNull(appContext.currentActivity) {
                 "Activity is null"
             }
-            var ringtoneUri = withContext(Dispatchers.IO) {
+            var selectedUri = withContext(Dispatchers.IO) {
                 db.settingDao().getFirst().ringtoneUri
             }
+            this
             val intent = Intent(RingtoneManager.ACTION_RINGTONE_PICKER).apply {
                 putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_NOTIFICATION)
                 putExtra(
@@ -297,7 +296,7 @@ class CountdownModule : Module() {
                 )
                 putExtra(
                     RingtoneManager.EXTRA_RINGTONE_EXISTING_URI,
-                    ringtoneUri?.let { Uri.parse(it) }
+                    selectedUri?.let { Uri.parse(it) }
                 )
             }
             activity.startActivityForResult(intent, 1001)
@@ -328,13 +327,14 @@ class CountdownModule : Module() {
                     "title" to title
                 )
             )
+            ringtoneUri = uri?.toString()
 
             coroutineScope.launch {
                 var setting = db.settingDao().getFirst()
                 db.settingDao().update(setting.copy(ringtoneUri = uri?.toString()))
             }
         }
-        
+
         Function("getCountdownSetting") {
             var settingDao = db.settingDao()
             lateinit var countdownSetting: CountdownSetting
@@ -400,6 +400,7 @@ class CountdownModule : Module() {
                 countDownData.targetTime =
                     this.pomodoro.toLong() * Constants.MINUTE + System.currentTimeMillis()
             }
+            internalTime = Constants.InternalTime.NORMAL
             requestNotificationPermission()
             start()
         }
@@ -431,7 +432,7 @@ class CountdownModule : Module() {
             )
         }
         OnDestroy {
-            handler.removeCallbacksAndMessages(null)
+            countdownJob?.cancel()
         }
 
 
