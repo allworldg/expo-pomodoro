@@ -1,8 +1,10 @@
 package expo.modules.countdown
 
 import android.Manifest
+import android.app.Activity
 import android.content.Intent
-import android.media.MediaPlayer
+import android.media.RingtoneManager
+import android.net.Uri
 import android.os.Build
 import android.os.Handler
 import android.os.HandlerThread
@@ -10,18 +12,22 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.room.Room
 import expo.modules.countdown.contants.Constants
-import expo.modules.countdown.contants.Constants.CYCLES
-import expo.modules.countdown.contants.Constants.POMODORO
-import expo.modules.countdown.contants.Constants.REST
-import expo.modules.countdown.contants.EventEnum
+import expo.modules.countdown.contants.Event
 import expo.modules.countdown.contants.InitData
 import expo.modules.countdown.contants.IntentExtras
 import expo.modules.countdown.contants.StateEnum
 import expo.modules.countdown.data.SettingDatabase
 import expo.modules.countdown.data.entity.CountdownSetting
 import expo.modules.countdown.data.entity.FocusDailyRecord
+import expo.modules.kotlin.exception.Exceptions
+import expo.modules.kotlin.functions.Coroutine
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -35,6 +41,8 @@ class CountdownModule : Module() {
     }
     private val handler = Handler(workerThread.looper)
     private var preSeond: Long = -1L;
+    private val coroutineScope =
+        CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val runnable = object : Runnable {
         override fun run() {
             countdown()
@@ -50,6 +58,7 @@ class CountdownModule : Module() {
             "setting.db"
         ).build()
     }
+
 
     private fun countdown() {
         val remainTime = countDownData.targetTime - System.currentTimeMillis()
@@ -112,7 +121,7 @@ class CountdownModule : Module() {
                 }
                 val totalDuration = focusDao.getTotalFocusDuration()
                 sendEvent(
-                    EventEnum.RECORD.value,
+                    Event.RECORD,
                     mapOf(
                         "focusCount" to result.focusCount,
                         "focusDuration" to result.focusDuration,
@@ -195,7 +204,8 @@ class CountdownModule : Module() {
 
     private fun sendStateChangeEvent() {
         sendEvent(
-            EventEnum.STATECHANGE.value, mapOf(
+            Event.STATE_CHANGE,
+            mapOf(
                 "state" to countDownData.state.value,
                 "curCycle" to countDownData.curCycle,
                 "cycles" to countDownData.cycles
@@ -222,7 +232,7 @@ class CountdownModule : Module() {
     }
 
     private fun emitTick(remainTime: Long) {
-        sendEvent(EventEnum.TICK.value, mapOf("remainTime" to remainTime))
+        sendEvent(Event.TICK, mapOf("remainTime" to remainTime))
     }
 
 
@@ -251,6 +261,7 @@ class CountdownModule : Module() {
     // that describes the module's functionality and behavior.
     // See https://docs.expo.dev/modules/module-api for more details about available components.
     override fun definition() = ModuleDefinition {
+
         // Sets the name of the module that JavaScript code will use to refer to the module. Takes a string as an argument.
         // Can be inferred from module's class name, but it's recommended to set it explicitly for clarity.
         // The module will be accessible from `requireNativeModule('Countdown')` in JavaScript.
@@ -264,12 +275,66 @@ class CountdownModule : Module() {
 
         // Defines event names that the module can send to JavaScript.
         Events(
-            EventEnum.TICK.value,
-            EventEnum.STATECHANGE.value,
-            EventEnum.STOP.value,
-            EventEnum.RECORD.value
+            Event.TICK,
+            Event.STATE_CHANGE,
+            Event.STOP,
+            Event.RECORD,
+            Event.RINGTONE_CHANGE
         )
 
+        AsyncFunction("selectMusic") Coroutine { ->
+            val activity = requireNotNull(appContext.currentActivity) {
+                "Activity is null"
+            }
+            var ringtoneUri = withContext(Dispatchers.IO) {
+                db.settingDao().getFirst().ringtoneUri
+            }
+            val intent = Intent(RingtoneManager.ACTION_RINGTONE_PICKER).apply {
+                putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_NOTIFICATION)
+                putExtra(
+                    RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT,
+                    false
+                )
+                putExtra(
+                    RingtoneManager.EXTRA_RINGTONE_EXISTING_URI,
+                    ringtoneUri?.let { Uri.parse(it) }
+                )
+            }
+            activity.startActivityForResult(intent, 1001)
+        }
+
+        OnActivityResult { _, payload ->
+
+            if (payload.requestCode != 1001) {
+                return@OnActivityResult
+            }
+
+            if (payload.resultCode != Activity.RESULT_OK) {
+                return@OnActivityResult
+            }
+
+
+            val uri = payload.data
+                ?.getParcelableExtra<Uri>(
+                    RingtoneManager.EXTRA_RINGTONE_PICKED_URI
+                )
+
+            val title = RingtoneManager.getRingtone(appContext.reactContext, uri)
+                .getTitle(appContext.reactContext)
+
+
+            sendEvent(
+                Event.RINGTONE_CHANGE, mapOf(
+                    "title" to title
+                )
+            )
+
+            coroutineScope.launch {
+                var setting = db.settingDao().getFirst()
+                db.settingDao().update(setting.copy(ringtoneUri = uri?.toString()))
+            }
+        }
+        
         Function("getCountdownSetting") {
             var settingDao = db.settingDao()
             lateinit var countdownSetting: CountdownSetting
@@ -280,18 +345,24 @@ class CountdownModule : Module() {
                         InitData.POMODORO,
                         InitData.REST,
                         InitData.CYCLE,
-                        InitData.getMusicUri(appContext.reactContext!!.packageName)
+                        InitData.ringToneUri,
                     )
                 settingDao.insertAll(countdownSetting)
             } else {
                 countdownSetting = settingDao.getFirst();
             }
+
+            val ringtoneName =
+                RingtoneManager.getRingtone(
+                    appContext.reactContext,
+                    countdownSetting.ringtoneUri?.let { Uri.parse(it) }
+                ).getTitle(appContext.reactContext)
+
             return@Function mapOf(
                 "pomodoro" to countdownSetting.pomodoro,
                 "rest" to countdownSetting.rest,
                 "cycles" to countdownSetting.cycles,
-                "ringtoneUri" to countdownSetting.ringtoneUri?.substringAfterLast("/")
-                    ?.substringBeforeLast(".")
+                "ringtoneName" to ringtoneName
             )
         }
         AsyncFunction("updateSetting") { countDownData: CountDownData ->
@@ -307,7 +378,16 @@ class CountdownModule : Module() {
         }
 
         Function(name = "stopCountdown") {
+
             stop()
+        }
+        Function("testOpenMusic") {
+            val intent = Intent(RingtoneManager.ACTION_RINGTONE_PICKER).apply {
+                putExtra(
+                    RingtoneManager.EXTRA_RINGTONE_TYPE,
+                    RingtoneManager.TYPE_NOTIFICATION
+                )
+            }
         }
 
         Function("startCountdown") { countdownData: CountDownData ->

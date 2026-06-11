@@ -2,6 +2,7 @@ export const Event = {
   TICK: "tick",
   STATECHANGE: "stateChange",
   RECORD: "record",
+  RINGTONE_CHANGE:"ringtoneChange",
 } as const;
 
 export const MILLISECOND = 1;

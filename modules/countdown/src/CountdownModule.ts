@@ -17,6 +17,7 @@ declare class CountdownModule extends NativeModule<CountdownModuleEvents> {
   updateSetting(value: CountdownSetting): void;
   getCountdownSetting(): CountdownSetting;
   getRecord(): Promise<FocusRecord>;
+  selectMusic():Promise<void>;
 }
 
 // This call loads the native module object from the JSI.

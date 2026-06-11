@@ -22,12 +22,13 @@ export default function Index() {
       pomodoro: "",
       rest: "",
       cycles: "",
-      ringtoneUri: "",
+      ringtoneName: "",
     });
   const [state, setState] = useState<string>("");
   const [remainTime, setRemainTime] = useState<number>(0);
   const subTick = useRef<any>(null);
   const subStateChange = useRef<any>(null); //todo: try to update type
+  const subRingToneChange = useRef<any>(null);
   const [curCycle, setCurCycle] = useState<number>(1);
   const [stateCycles, setStateCycles] = useState<number>(0);
   useEffect(() => {
@@ -36,7 +37,7 @@ export default function Index() {
       pomodoro: setting.pomodoro.toString(),
       rest: setting.rest.toString(),
       cycles: setting.cycles.toString(),
-      ringtoneUri: setting.ringtoneUri,
+      ringtoneName: setting.ringtoneName,
     });
     subTick.current = CountdownModule.addListener(
       Event.TICK,
@@ -45,6 +46,15 @@ export default function Index() {
         setRemainTime(remainTime);
       }
     );
+    subRingToneChange.current = CountdownModule.addListener(
+      Event.RINGTONE_CHANGE,
+      (data:{title:string})=>{
+        setCountdownSetting((prev)=>({
+          ...prev,
+          ringtoneName:data.title,
+        }))
+      }
+    )
     subStateChange.current = CountdownModule.addListener(
       Event.STATECHANGE,
       (data: StateChangeData) => {
@@ -67,6 +77,7 @@ export default function Index() {
     return () => {
       subStateChange.current.remove();
       subTick.current.remove();
+      subRingToneChange.current.remove();
     };
   }, []);
 
@@ -83,7 +94,7 @@ export default function Index() {
         pomodoro: Number(pomodoro),
         rest: Number(rest),
         cycles: Number(cycles),
-        ringtoneUri: "",
+        ringtoneName: "",
       });
     } else {
       var setting = CountdownModule.getCountdownSetting();

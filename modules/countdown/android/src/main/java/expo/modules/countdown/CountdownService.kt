@@ -41,7 +41,7 @@ class CountdownService : Service() {
 
     private fun playFinishSound() {
         mediaPlayer?.release()
-        mediaPlayer = MediaPlayer.create(this, R.raw.finish)
+        mediaPlayer = MediaPlayer.create(this, null)
         mediaPlayer?.setOnCompletionListener {
             it.release()
             mediaPlayer = null
@@ -134,7 +134,8 @@ class CountdownService : Service() {
                 notificationManager.notify(NotificationId.NORMAL, notification)
                 stopSelf()
             }
-            Constants.ActionEnum.PLAYMUSIC.name->{
+
+            Constants.ActionEnum.PLAYMUSIC.name -> {
                 println("playmusic start")
                 playFinishSound()
             }

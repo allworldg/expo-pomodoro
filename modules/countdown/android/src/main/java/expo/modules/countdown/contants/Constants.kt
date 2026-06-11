@@ -65,7 +65,5 @@ object InitData {
     const val POMODORO = 1
     const val REST = 1
     const val CYCLE = 1
-    fun getMusicUri(packageName: String): String {
-        return "android.resource://$packageName/raw/finish"
-    }
+    val ringToneUri = null
 }

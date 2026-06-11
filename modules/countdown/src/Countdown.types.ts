@@ -14,13 +14,13 @@ export type CountdownSetting = {
   pomodoro: number;
   rest: number;
   cycles: number;
-  ringtoneUri: string;
+  ringtoneName: string;
 };
 export type CountdownSettingInput = {
   pomodoro: string;
   rest: string;
   cycles: string;
-  ringtoneUri: string;
+  ringtoneName: string;
 };
 
 export enum StateEnum {
@@ -42,6 +42,7 @@ export type FocusRecord = {
 
 export type CountdownModuleEvents = {
   onChange: (params: ChangeEventPayload) => void;
+  [Event.RINGTONE_CHANGE]:(data:{title:string})=>void;
   [Event.TICK]: (data: { remainTime: number }) => void;
   [Event.STATECHANGE]: (data: StateChangeData) => void;
   [Event.RECORD]: (data: {

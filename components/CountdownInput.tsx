@@ -1,5 +1,6 @@
 import { CountdownSettingInput } from "@/modules/countdown";
-import { Text, TextInput, View } from "react-native";
+import CountdownModule from "@/modules/countdown/src/CountdownModule";
+import { Button, Text, TextInput, View } from "react-native";
 
 type Props = {
   value: CountdownSettingInput;
@@ -42,7 +43,7 @@ export default function CountdownInput({ value, onChange }: Props) {
       <View className="flex-row mb-6">
         <Text>循环: </Text>
         <TextInput
-          className="border-b py-0 ml-2 w-14 text-center"
+          className="bordjjjjjj-b py-0 ml-2 w-14 text-center"
           value={value.cycles}
           maxLength={4}
           onChangeText={(text) =>
@@ -53,6 +54,11 @@ export default function CountdownInput({ value, onChange }: Props) {
           }
         ></TextInput>
         <Text className="ml-2">次</Text>
+        <Button
+          onPress={()=>CountdownModule.selectMusic()}
+          title="选择铃声"
+        ></Button>
+        <Text>{value.ringtoneName}</Text>
       </View>
     </View>
   );
