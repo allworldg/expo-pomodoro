@@ -1,7 +1,8 @@
 import ClockDisplay from "@/components/ClockDisplay";
 import CountdownInput from "@/components/CountdownInput";
 import PomodoroStatus from "@/components/PomodoroStatus";
-import { Record } from "@/components/Record";
+import Record from "@/components/Record";
+import StartStopButton from "@/components/StartStopButton";
 import "@/global.css";
 import {
   CountdownSettingInput,
@@ -13,7 +14,6 @@ import CountdownModule from "@/modules/countdown/src/CountdownModule";
 import { checkInRange } from "@/utils/InputCheck";
 import { useEffect, useRef, useState } from "react";
 import { View } from "react-native";
-import Svg, { Path } from "react-native-svg";
 
 export default function Index() {
   const [isStarted, setIsStarted] = useState(false);
@@ -48,13 +48,13 @@ export default function Index() {
     );
     subRingToneChange.current = CountdownModule.addListener(
       Event.RINGTONE_CHANGE,
-      (data:{title:string})=>{
-        setCountdownSetting((prev)=>({
+      (data: { title: string }) => {
+        setCountdownSetting((prev) => ({
           ...prev,
-          ringtoneName:data.title,
-        }))
+          ringtoneName: data.title,
+        }));
       }
-    )
+    );
     subStateChange.current = CountdownModule.addListener(
       Event.STATECHANGE,
       (data: StateChangeData) => {
@@ -132,44 +132,11 @@ export default function Index() {
           cycles={stateCycles}
         ></PomodoroStatus>
       </View>
-      <View className="items-center max-h-16 mb-5">
+      <View className="items-center max-h-16 mb-10">
         {!isStarted ?
-          <Svg
-            width={"50%"}
-            height={"100%"}
-            viewBox="0 0 1024 1024"
-            onPress={() => {
-              start();
-            }}
-          >
-            <Path
-              d="M512 938.666667a426.666667 426.666667 0 1 1 426.666667-426.666667 426.666667 426.666667 0 0 1-426.666667 426.666667zM450.133333 305.92A42.666667 42.666667 0 0 0 384 341.333333v341.333334a42.666667 42.666667 0 0 0 66.133333 35.413333l256-170.666667a42.666667 42.666667 0 0 0 0-70.826666z"
-              fill="#FFFFFF"
-              p-id="1164"
-            ></Path>
-            <Path
-              d="M512 938.666667a426.666667 426.666667 0 1 1 426.666667-426.666667 426.666667 426.666667 0 0 1-426.666667 426.666667zM450.133333 305.92A42.666667 42.666667 0 0 0 384 341.333333v341.333334a42.666667 42.666667 0 0 0 66.133333 35.413333l256-170.666667a42.666667 42.666667 0 0 0 0-70.826666z"
-              fill="#0C66FF"
-              p-id="1165"
-            ></Path>
-          </Svg>
-        : <Svg
-            width={"50%"}
-            height={"100%"}
-            viewBox="0 0 1024 1024"
-            onPress={() => stop()}
-          >
-            <Path
-              d="M512 938.666667a426.666667 426.666667 0 1 1 426.666667-426.666667 426.666667 426.666667 0 0 1-426.666667 426.666667zM395.52 356.693333a38.826667 38.826667 0 0 0-38.826667 38.826667v232.533333a38.826667 38.826667 0 0 0 38.826667 38.826667h232.533333a38.826667 38.826667 0 0 0 38.826667-38.826667V395.52a38.826667 38.826667 0 0 0-38.826667-38.826667z"
-              fill="#FFFFFF"
-              p-id="1014"
-            ></Path>
-            <Path
-              d="M512 938.666667a426.666667 426.666667 0 1 1 426.666667-426.666667 426.666667 426.666667 0 0 1-426.666667 426.666667zM395.52 356.693333a38.826667 38.826667 0 0 0-38.826667 38.826667v232.533333a38.826667 38.826667 0 0 0 38.826667 38.826667h232.533333a38.826667 38.826667 0 0 0 38.826667-38.826667V395.52a38.826667 38.826667 0 0 0-38.826667-38.826667z"
-              fill="#0C66FF"
-              p-id="1015"
-            ></Path>
-          </Svg>
+          <StartStopButton isStarted={isStarted} onPress={start}></StartStopButton>
+        : 
+          <StartStopButton isStarted={isStarted} onPress={stop}></StartStopButton>
         }
       </View>
       <View className="items-center">

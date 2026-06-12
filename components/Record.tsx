@@ -5,14 +5,14 @@ import CountdownModule from "@/modules/countdown/src/CountdownModule";
 import { useEffect, useRef, useState } from "react";
 import { Text, View } from "react-native";
 
-export function Record() {
+export default function Record() {
   const subRecord = useRef<any>(null);
   const [focusCount, setFocusCount] = useState<number>(0);
   const [focusDuration, setFocusDuration] = useState<number>(0);
   const [totalDuration, setTotalDuration] = useState<number>(0);
-  const minute = Math.floor((focusDuration %HOUR) /MINUTE);
+  const minute = Math.floor((focusDuration % HOUR) / MINUTE);
   const hour = Math.floor(focusDuration / HOUR);
-  const totalMinute = Math.floor((totalDuration %HOUR) /MINUTE);
+  const totalMinute = Math.floor((totalDuration % HOUR) / MINUTE);
   const totalHour = Math.floor(totalDuration / HOUR);
   CountdownModule.getRecord().then((data) => {
     const { focusCount, focusDuration, totalDuration } = data;

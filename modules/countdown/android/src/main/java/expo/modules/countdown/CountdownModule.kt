@@ -351,6 +351,7 @@ class CountdownModule : Module() {
             } else {
                 countdownSetting = settingDao.getFirst();
             }
+            ringtoneUri = countdownSetting.ringtoneUri
 
             val ringtoneName =
                 RingtoneManager.getRingtone(
