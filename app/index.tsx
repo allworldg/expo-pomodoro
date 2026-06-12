@@ -12,6 +12,7 @@ import {
 import { Event } from "@/modules/countdown/src/CountdownConstant";
 import CountdownModule from "@/modules/countdown/src/CountdownModule";
 import { checkInRange } from "@/utils/InputCheck";
+import { Stack } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { View } from "react-native";
 
@@ -122,7 +123,8 @@ export default function Index() {
   }
   return (
     <View className="flex-1">
-      <View className="items-center py-10">
+      <Stack.Screen options={{ headerShown: false }} />
+      <View className="items-center py-10 mt-20">
         <ClockDisplay remainTime={remainTime}></ClockDisplay>
       </View>
       <View className={`items-center mb-6 ${!isStarted ? "hidden" : ""}`}>
@@ -134,9 +136,14 @@ export default function Index() {
       </View>
       <View className="items-center max-h-16 mb-10">
         {!isStarted ?
-          <StartStopButton isStarted={isStarted} onPress={start}></StartStopButton>
-        : 
-          <StartStopButton isStarted={isStarted} onPress={stop}></StartStopButton>
+          <StartStopButton
+            isStarted={isStarted}
+            onPress={start}
+          ></StartStopButton>
+        : <StartStopButton
+            isStarted={isStarted}
+            onPress={stop}
+          ></StartStopButton>
         }
       </View>
       <View className="items-center">
